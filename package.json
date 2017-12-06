@@ -1,0 +1,23 @@
+{
+  "name": "login-action",
+  "version": "1.0.0",
+  "description": "Authentication action. Generation of token if user is authenticated",
+  "main": "authentication-action.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deshpandega/login-action.git"
+  },
+  "author": "Gaurang Deshpande",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/deshpandega/login-action/issues"
+  },
+  "homepage": "https://github.com/deshpandega/login-action#readme",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^8.1.0"
+  }
+}
