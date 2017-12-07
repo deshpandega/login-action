@@ -5,24 +5,53 @@ const login = function(params){
   const jwt_secret = params.jwt_secret;
   // const aws = require('aws-sdk');
 
-  // AKIAIHSLAURYPKVBSSHA
-  // Y3CKxhf3WRqd8XEvoXrosFwu7mIr1L9BrKfzrWUT
+  // GAKIAIHSLAURYPKVBSSHA
+  // Y3CKxhf3WRqd8XEvoXrosFwu7mIr1L9BrKfzrWUTS
 
+  console.log("headers===> "+params.__ow_headers);
   const user = {
     username: params.user.username,
     password: params.user.password,
-    fullname: params.user.fullname,
-    token: params.user.token,
-    createdDate: params.user.createdDate
+    fullname: "Gaurang Deshpande",
+    profileIcon: null,
+    createdDate: new Date(),
+    hobbies: [
+      {
+        name: "Painting"
+      },
+      {
+        name: "Bike Riding"
+      },
+      {
+        name: "Crafting"
+      }
+    ]
   };
 
 
   const authenticateUser = () => {
-    if(user.token!="" && user.token!=null && user.token != undefined){
-      
+    const token = user.token || params.__ow_headers.token;
+    if(token){
       return new Promise((resolve, reject)=> {
-        resolve({
-
+        jwt.verify(token, jwt_secret, function(error, decoded){
+          if(error){
+            reject({
+              headers: { 'Content-Type': 'application/json' },
+              statusCode: 401,
+              body: new Buffer(JSON.stringify("Incorrect Credentials!")).toString('base64')
+            });
+          }
+          else{
+            for(key in decoded){
+              console.log(decoded[key]);
+            }
+            
+            resolve({
+              headers: { 'Content-Type': 'application/json' },
+              statusCode: 200,
+              body : decoded
+            });
+          }
         })
       });
     }
@@ -62,8 +91,12 @@ const login = function(params){
       if(data){
         console.log('Generate toke here');
         //generate token here
+        for(key in data){
+          console.log(data[key]);
+        }
+        console.log("This was the data received");
         const payload = {
-          user: user
+          user: data
         };
         console.log('before signing ');
         const token = jwt.sign(payload, jwt_secret);
@@ -98,15 +131,17 @@ const login = function(params){
       })
     .catch((error)=>{
       console.log('error during authentication-->  '+error.statusCode);
-      return error;
+      return ({
+         headers: {
+            'Content-Type': 'application/json',
+            'token': ''
+          },
+          statusCode: 401,
+          body: new Buffer(JSON.stringify("Incorrect Credentials!")).toString('base64')
+      });
     });
 
   return authenticate;
-  // ({
-  //   headers: { 'Content-Type': 'application/json' },
-  //   statusCode: 200,
-  //   body: new Buffer(JSON.stringify("Hello World Here!")).toString('base64')
-  // });
 };
 
 exports.main = login;
