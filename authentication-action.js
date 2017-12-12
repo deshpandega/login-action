@@ -1,113 +1,71 @@
-const login = function(params){
+exports.login = function login(params){
 
+  //import statements to use multiple modules
   const jwt = require('jsonwebtoken');
   const bcrypt = require('bcryptjs');
+  const mongoClient = require('mongodb').MongoClient;
+
+  // Environment variable we are loading as params from config.json file
   const jwt_secret = params.jwt_secret;
-  // const aws = require('aws-sdk');
 
-  // GAKIAIHSLAURYPKVBSSHA
-  // Y3CKxhf3WRqd8XEvoXrosFwu7mIr1L9BrKfzrWUTS
-
-  console.log("headers===> "+params.__ow_headers);
+  console.log("JWT secret===> "+params.jwt_secret);
+  // const Schema = mongoose.Schema;
+  
+  //Generate the user information from parameters sent in request
   const user = {
     username: params.user.username,
     password: params.user.password,
     fullname: "Gaurang Deshpande",
     profileIcon: null,
     createdDate: new Date(),
-    hobbies: [
-      {
-        name: "Painting"
-      },
-      {
-        name: "Bike Riding"
-      },
-      {
-        name: "Crafting"
-      }
-    ]
+    hobbies: [{name: "Painting"}]
   };
 
-
   const authenticateUser = () => {
-    const token = user.token || params.__ow_headers.token;
-    if(token){
-      return new Promise((resolve, reject)=> {
-        jwt.verify(token, jwt_secret, function(error, decoded){
-          if(error){
-            reject({
-              headers: { 'Content-Type': 'application/json' },
-              statusCode: 401,
-              body: new Buffer(JSON.stringify("Incorrect Credentials!")).toString('base64')
-            });
-          }
-          else{
-            for(key in decoded){
-              console.log(decoded[key]);
-            }
-            
-            resolve({
-              headers: { 'Content-Type': 'application/json' },
-              statusCode: 200,
-              body : decoded
-            });
-          }
-        })
-      });
-    }
-    else if(user.username === "" || user.password ===""){
-      return new Promise((resolve, reject) => {
-        reject({
-          headers: { 'Content-Type': 'application/json' },
-          statusCode: 401,
-          body: new Buffer(JSON.stringify("Please enter username and password!")).toString('base64')
-        });
-      });
-    }
-    else if(user.username === "gaurang" && user.password === "gaurang"){
-      return new Promise((resolve, reject) => {
-        user.password = bcrypt.hashSync(user.password, 10);
-        resolve({
-          headers: { 'Content-Type': 'application/json' },
-          statusCode: 200,
-          body : user
-        });
-      });
-    }
-    else{
-      console.log('Something is wrong with authentication');
-      return new Promise((resolve, reject) => {
-        reject({
-          headers: { 'Content-Type': 'application/json' },
-          statusCode: 401,
-          body: new Buffer(JSON.stringify("Incorrect Credentials!")).toString('base64')
-        });
-      });
-    }
+    // const token = user.token || params.__ow_headers.token;
+    return new Promise((resolve, reject)=>{
+      if(user.username === "" || user.password ===""){
+        reject(`401: Please enter username and password!`);
+      }
+      else if(user.username === "gaurang" && user.password === "gaurang"){
+        user.password=bcrypt.hashSync(user.password, 10);
+        resolve(user);
+      }
+      else{
+        reject(`401: User not authorized!`);
+      }
+    });
   };
 
   const generateToken = (data) => {
     return new Promise((resolve, reject) => {
       if(data){
-        console.log('Generate toke here');
         //generate token here
-        for(key in data){
-          console.log(data[key]);
-        }
-        console.log("This was the data received");
         const payload = {
           user: data
         };
-        console.log('before signing ');
-        const token = jwt.sign(payload, jwt_secret);
-        console.log('Generate token using jwt here----> '+token);
+
+        console.log('Generating token here');
+        const generatedToken = jwt.sign(payload, jwt_secret);
+        
+        const response = {
+          username: payload.user.username,
+          password: payload.user.password,
+          fullname: "Gaurang Deshpande",  //payload.user.name
+          profileIcon: null,              //payload.user.profileIcon
+          createdDate: new Date(),        //payload.user.createdDate
+          hobbies: [{name: "Painting"}],  //payload.user.hobbies
+          token: generatedToken
+        }
+
+        console.log(response.user+" <--> "+response.token);
+
         resolve({
           headers: {
-            'Content-Type': 'application/json',
-            'token': token
+            'Content-Type': 'application/json'
           },
           statusCode: 200,
-          body : user
+          body : response
         });
 
       }
@@ -130,18 +88,72 @@ const login = function(params){
         return data;
       })
     .catch((error)=>{
-      console.log('error during authentication-->  '+error.statusCode);
+      console.log("error is --->> "+error);
+      const status = error.split(":")[0];
+      const errorMessage = error.split(":")[1];
+
       return ({
          headers: {
-            'Content-Type': 'application/json',
-            'token': ''
+            'Content-Type': 'application/json'
           },
-          statusCode: 401,
-          body: new Buffer(JSON.stringify("Incorrect Credentials!")).toString('base64')
+          statusCode: status,
+          body: new Buffer(JSON.stringify(errorMessage)).toString('base64')
       });
     });
 
   return authenticate;
 };
 
-exports.main = login;
+
+
+exports.logout = (params) => {
+  // Imports 
+  const jwt = require('jsonwebtoken');
+
+  // Environment variable we are loading as params from config.json file
+  const jwt_secret = params.jwt_secret;
+
+  // Sign an empty token
+  const signedToken = jwt.sign({}, jwt_secret);
+
+  return({
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    statusCode: 200,
+    body: {token:signedToken}
+  })
+}
+
+exports.checkToken = (params) => {
+  const jwt = require('jsonwebtoken');
+
+  // Environment variable we are loading as params from config.json file
+  const jwt_secret = params.jwt_secret;   
+
+  // Get token sent from user
+  const userToken = params.generatedToken;
+
+  // Check user data sent using token
+  const userData = jwt.decode(userToken, {complete:true});
+
+  if(userData) {
+    return({
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      statusCode: 200,
+      body: new Buffer(JSON.stringify(userData.payload)).toString('base64')
+    });
+  }
+  else{
+    return({
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      statusCode: 404,
+      body: new Buffer(JSON.stringify("No token passed")).toString('base64')
+    });
+  }
+
+};

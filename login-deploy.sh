@@ -10,12 +10,13 @@ zip -r login.zip * -x "*.zip" -x "*.sh"
 wsk -i package update hobbylocale
 
 # Create / Update action
-wsk -i action update guest/hobbylocale/login login.zip --kind nodejs:6 --web true --param jwt_secret \/\/Eb-De\/-nEu
+wsk -i action update guest/hobbylocale/login login.zip --kind nodejs:6 --web true --param-file config.json --main=login
 
-# https://192.168.33.13/api/v1/namespaces/guest/activations
-# https://192.168.33.13/api/v1/namespaces/guest/activations/{activationName}
-# https://192.168.33.13/api/v1/namespaces/guest/hobbylocale/login
-# curl https://192.168.33.13/api/v1/namespaces/guest/hobbylocale/hello
-# https://192.168.33.13/api/v1/web/guest/hobbylocale/login
-# wsk -i action get guest/hobbylocale/login --url
+wsk -i action update guest/hobbylocale/logout login.zip --kind nodejs:6 --web true --param-file config.json --main=logout
+
+wsk -i action update guest/hobbylocale/session login.zip --kind nodejs:6 --web true --param-file config.json --main=checkToken
+
+# Get urls for created actions
 wsk -i action get guest/hobbylocale/login --url
+wsk -i action get guest/hobbylocale/logout --url
+wsk -i action get guest/hobbylocale/session --url
