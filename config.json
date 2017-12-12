@@ -1,0 +1,4 @@
+{
+	"mongoDB_connection" : "mongodb://hobbyLocale:\/\/Eb-De\/-nEu@ds133746.mlab.com:33746/hobbylocale",
+	"jwt_secret":"|/|/Eb-D&|/-nEu"
+}
