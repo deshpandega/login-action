@@ -1,4 +1,5 @@
 {
-	"mongoDB_connection" : "mongodb://hobbyLocale:\/\/Eb-De\/-nEu@ds133746.mlab.com:33746/hobbylocale",
+	"mongoDB_connection" : "mongodb://hobbielocale:WeBDeVnEu@ds133746.mlab.com:33746/hobbylocale",
+	"collectionName":"users",
 	"jwt_secret":"|/|/Eb-D&|/-nEu"
 }

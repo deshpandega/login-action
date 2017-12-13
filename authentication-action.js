@@ -7,35 +7,99 @@ exports.login = function login(params){
 
   // Environment variable we are loading as params from config.json file
   const jwt_secret = params.jwt_secret;
+  const collectionName = params.collectionName;
+  const databaseConnections =  params.mongoDB_connection;
 
-  console.log("JWT secret===> "+params.jwt_secret);
-  // const Schema = mongoose.Schema;
+  console.log("collection name -> "+collectionName);
+  console.log("JWT secret===> "+jwt_secret);
   
   //Generate the user information from parameters sent in request
+  // const user = {
+  //   email: params.user.username,
+  //   password: params.user.password,
+  //   name: "Gaurang Deshpande",
+  //   profileIcon: null,
+  //   createdDate: new Date(),
+  //   hobbies: [{name: "Painting"}]
+  // };
   const user = {
-    username: params.user.username,
-    password: params.user.password,
-    fullname: "Gaurang Deshpande",
-    profileIcon: null,
-    createdDate: new Date(),
-    hobbies: [{name: "Painting"}]
+    "name":"",
+    "password" : "",
+    "email" : "",
+    "profileIcon": "",
+    "dob" : "",
+    "aboutme" : "",
+    "hobbies" : [{
+        "name" : ""
+      }],
+    "registeredevents" : [{
+        "name" : "",  
+        "venue" : ""
+      }],
+    "hostedevents" : [{
+        "name" : "", 
+        "venue" : ""
+      }]
   };
 
-  const authenticateUser = () => {
+  // Overright the properties sent from user to user object above
+  const queryParam = Object.assign(user, params.user);
+  
+  // References to use throughtout
+  let database;
+  let dbClient;
+
+  const checkUser = () => {
     // const token = user.token || params.__ow_headers.token;
     return new Promise((resolve, reject)=>{
-      if(user.username === "" || user.password ===""){
+      if(queryParam.username === "" || queryParam.password ===""){
         reject(`401: Please enter username and password!`);
       }
-      else if(user.username === "gaurang" && user.password === "gaurang"){
-        user.password=bcrypt.hashSync(user.password, 10);
-        resolve(user);
-      }
       else{
-        reject(`401: User not authorized!`);
+        resolve(queryParam);
       }
     });
   };
+
+  const authenticateUser = (queryParam) => {
+    // Encrypt user password
+    // queryParam.password=bcrypt.hashSync(queryParam.password, 10);
+    console.log("this is normal password-> "+queryParam.password);
+    return new Promise((resolve, reject)=>{
+      mongoClient.connect(databaseConnections, (err, client)=>{
+        if(err){
+          console.log("error in DB connection -> "+err);
+          reject(`401:${err}`);
+        }
+        else{
+          dbClient = client;
+          database = client.db('hobbylocale');
+
+          // Get collection name from database
+          const collection = database.collection(collectionName);
+
+          // Find if the user is already present in database
+          collection.findOne({email:queryParam.email}, (err, userData)=>{
+            if(userData){
+              console.log("this is hashed password-> "+userData.password);
+              bcrypt.compare(queryParam.password, userData.password, (err, res)=>{
+                if(res){
+                  console.log("Access Granted!");
+                  resolve(userData);
+                }
+                else{
+                  reject('401:Access Denied!');
+                }
+              })
+            }
+            else{
+              reject('401:Access Denied!');
+            }
+          });
+        }
+      });
+    });
+  }
 
   const generateToken = (data) => {
     return new Promise((resolve, reject) => {
@@ -49,12 +113,15 @@ exports.login = function login(params){
         const generatedToken = jwt.sign(payload, jwt_secret);
         
         const response = {
-          username: payload.user.username,
+          email: payload.user.email,
           password: payload.user.password,
-          fullname: "Gaurang Deshpande",  //payload.user.name
-          profileIcon: null,              //payload.user.profileIcon
-          createdDate: new Date(),        //payload.user.createdDate
-          hobbies: [{name: "Painting"}],  //payload.user.hobbies
+          name: payload.user.name,
+          profileIcon: payload.user.profileIcon,
+          dob: payload.user.dob,
+          aboutme: payload.user.aboutme,
+          hobbies: payload.user.hobbies,
+          registeredevents: payload.user.registeredevents,
+          hostedevents: payload.user.hostedevents,
           token: generatedToken
         }
 
@@ -65,33 +132,26 @@ exports.login = function login(params){
             'Content-Type': 'application/json'
           },
           statusCode: 200,
-          body : response
+          body :new Buffer(JSON.stringify(response)).toString('base64') 
         });
 
       }
       else{
-        reject({
-          headers: {
-            'Content-Type': 'application/json',
-            'token': ''
-          },
-          statusCode: 401,
-          body: new Buffer(JSON.stringify("Incorrect Credentials!")).toString('base64')
-        });
+        reject("401:Incorrect Credentials!");
       }
     });
   };
 
-  const authenticate = authenticateUser()
+  const authenticate = checkUser()
+    .then(authenticateUser)
     .then(generateToken)
     .then((data)=>{
         return data;
       })
     .catch((error)=>{
       console.log("error is --->> "+error);
-      const status = error.split(":")[0];
-      const errorMessage = error.split(":")[1];
-
+      const status = error.split(':')[0];
+      const errorMessage = error.split(':')[1];
       return ({
          headers: {
             'Content-Type': 'application/json'
