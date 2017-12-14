@@ -14,14 +14,6 @@ exports.login = function login(params){
   console.log("JWT secret===> "+jwt_secret);
   
   //Generate the user information from parameters sent in request
-  // const user = {
-  //   email: params.user.username,
-  //   password: params.user.password,
-  //   name: "Gaurang Deshpande",
-  //   profileIcon: null,
-  //   createdDate: new Date(),
-  //   hobbies: [{name: "Painting"}]
-  // };
   const user = {
     "name":"",
     "password" : "",
@@ -62,9 +54,7 @@ exports.login = function login(params){
   };
 
   const authenticateUser = (queryParam) => {
-    // Encrypt user password
-    // queryParam.password=bcrypt.hashSync(queryParam.password, 10);
-    console.log("this is normal password-> "+queryParam.password);
+    
     return new Promise((resolve, reject)=>{
       mongoClient.connect(databaseConnections, (err, client)=>{
         if(err){
@@ -82,6 +72,7 @@ exports.login = function login(params){
           collection.findOne({email:queryParam.email}, (err, userData)=>{
             if(userData){
               console.log("this is hashed password-> "+userData.password);
+              // Compare the password of found user
               bcrypt.compare(queryParam.password, userData.password, (err, res)=>{
                 if(res){
                   console.log("Access Granted!");
@@ -156,7 +147,7 @@ exports.login = function login(params){
          headers: {
             'Content-Type': 'application/json'
           },
-          statusCode: status,
+          statusCode: parseInt(status),
           body: new Buffer(JSON.stringify(errorMessage)).toString('base64')
       });
     });
@@ -181,7 +172,7 @@ exports.logout = (params) => {
       'Content-Type': 'application/json'
     },
     statusCode: 200,
-    body: {token:signedToken}
+    body: new Buffer(JSON.stringify({token:signedToken})).toString('base64')
   })
 }
 
