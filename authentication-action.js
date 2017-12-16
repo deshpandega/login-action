@@ -31,7 +31,16 @@ exports.login = function login(params){
     "hostedevents" : [{
         "name" : "", 
         "venue" : ""
-      }]
+      }],
+    "payments" : [
+      {
+        "cardHolderName" : "",
+        "cardNumber" : "",
+        "cardMonth" : "",
+        "cardYear" : "",
+        "cardCVV" : ""
+      }
+    ]
   };
 
   // Overright the properties sent from user to user object above
